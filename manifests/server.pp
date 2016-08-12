@@ -89,6 +89,7 @@ class postfix::server (
   $smtp_content_filter = [],
   $smtps_content_filter = [],
   $submission = false,
+  $custom_master = undef,
   # EL5
   $submission_smtpd_enforce_tls = 'yes',
   # EL6
@@ -177,15 +178,21 @@ class postfix::server (
   package { $package_name: ensure => $postfix_package_ensure, alias => 'postfix' }
 
   service { 'postfix':
-    require   => Package[$package_name],
-    enable    => true,
     ensure    => running,
+    enable    => true,
     hasstatus => true,
     restart   => $service_restart,
+    require   => Package[$package_name],
+  }
+
+  if $custom_master == undef {
+    $master_file = "postfix/master.cf${filesuffix}.erb"
+  } else {
+    $master_file = $custom_master
   }
 
   file { "${config_directory}/master.cf":
-    content => template("postfix/master.cf${filesuffix}.erb"),
+    content => template($master_file),
     notify  => Service['postfix'],
     require => Package[$package_name],
   }
