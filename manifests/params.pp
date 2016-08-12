@@ -4,7 +4,7 @@ class postfix::params {
   case $::osfamily {
     'RedHat': {
       $postfix_version = $::operatingsystemmajrelease ? {
-        #'7'     => '2.10.1',
+        '7'     => '2.10.1',
         '6'     => '2.6.6',
         '5'     => '2.3.3',
         default => '2.6.6',
@@ -37,7 +37,23 @@ class postfix::params {
       $postfix_version = undef
       $command_directory = '/usr/sbin'
       $config_directory = '/etc/postfix'
-      $daemon_directory = '/usr/lib/postfix'
+      case $::lsbdistid {
+        'Ubuntu': {
+          $daemon_directory = str2bool(versioncmp($::operatingsystemrelease, '16.04') < 0) ? {
+            true    => '/usr/lib/postfix',
+            default => '/usr/lib/postfix/sbin',
+          }
+        }
+        'Debian': {
+          $daemon_directory = $::lsbdistcodename ? {
+            /(wheezy|jessie)/ => '/usr/lib/postfix',
+            default           => '/usr/lib/postfix/sbin',
+          }
+        }
+        default: {
+          $daemon_directory = '/usr/lib/postfix'
+        }
+      }
       $data_directory = '/var/lib/postfix'
       $manpage_directory = '/usr/share/man'
       $readme_directory = '/usr/share/doc/postfix'
@@ -89,5 +105,6 @@ class postfix::params {
       fail("Unsupported OS family ${::osfamily}")
     }
   }
-}
 
+  $compatibility_level = 2
+}
